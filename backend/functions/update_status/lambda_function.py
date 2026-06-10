@@ -6,11 +6,26 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('DocumentFlow-Documents')
 ses = boto3.client('ses', region_name='us-east-1')
 
+SENDER_EMAIL = 'shirishiri931@gmail.com'
+
 VALID_STATUSES = [
     'Not Started', 'In Progress', 'Ready for Review',
     'Under Review', 'Revision Required', 'Approved',
     'Completed', 'Overdue'
 ]
+
+def send_notification(to_email, subject, message):
+    try:
+        ses.send_email(
+            Source=SENDER_EMAIL,
+            Destination={'ToAddresses': [to_email]},
+            Message={
+                'Subject': {'Data': subject},
+                'Body': {'Text': {'Data': message}}
+            }
+        )
+    except Exception as e:
+        print(f"Email error: {str(e)}")
 
 def lambda_handler(event, context):
     try:
@@ -18,6 +33,7 @@ def lambda_handler(event, context):
         document_id = event.get('pathParameters', {}).get('id')
         new_status = body.get('status')
         comment = body.get('comment', '')
+        notify_email = body.get('notifyEmail', '')
 
         if not document_id or not new_status:
             return {
@@ -45,6 +61,18 @@ def lambda_handler(event, context):
             },
             ExpressionAttributeNames={'#st': 'status'}
         )
+
+        if notify_email:
+            subject = f'DocumentFlow – Status Updated: {new_status}'
+            message = f'''Document status has been updated.
+
+Document ID: {document_id}
+New Status: {new_status}
+Comment: {comment}
+Updated At: {now}
+
+Please log in to DocumentFlow Cloud to view the document.'''
+            send_notification(notify_email, subject, message)
 
         return {
             'statusCode': 200,
