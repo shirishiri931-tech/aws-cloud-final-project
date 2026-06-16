@@ -35,7 +35,10 @@ def lambda_handler(event, context):
         
         new_version = int(document.get('currentVersion', 0)) + 1
         file_name = body.get('fileName', 'document')
-        s3_key = f"{document_id}/v{new_version}/{file_name}"
+        project_name = document.get('projectName', 'unknown').replace(' ', '_')
+        version_type = body.get('versionType', 'Submitted')
+        status_at_upload = body.get('statusAtUpload', 'In Progress')
+        s3_key = f"projects/{project_name}/documents/{document_id}/versions/v{new_version}/{file_name}"
         
         presigned_url = s3.generate_presigned_url(
             'put_object',
@@ -47,12 +50,13 @@ def lambda_handler(event, context):
         
         documents_table.update_item(
             Key={'documentId': document_id},
-            UpdateExpression='SET currentVersion = :v, s3Key = :s, lastUpdated = :t, #st = :status',
+            UpdateExpression='SET currentVersion = :v, s3Key = :s, lastUpdated = :t, #st = :status, currentFileName = :fn',
             ExpressionAttributeValues={
                 ':v': Decimal(new_version),
                 ':s': s3_key,
                 ':t': now,
-                ':status': 'In Progress'
+                ':status': 'In Progress',
+                ':fn': file_name
             },
             ExpressionAttributeNames={'#st': 'status'}
         )
@@ -63,7 +67,9 @@ def lambda_handler(event, context):
             's3Key': s3_key,
             'uploadedBy': body.get('uploadedBy', 'unknown'),
             'uploadedAt': now,
-            'fileName': file_name
+            'fileName': file_name,
+            'versionType': version_type,
+            'statusAtUpload': status_at_upload
         })
         
         return {

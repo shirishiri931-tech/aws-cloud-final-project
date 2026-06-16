@@ -10,7 +10,7 @@ def lambda_handler(event, context):
     try:
         body = json.loads(event.get('body', '{}'))
         
-        required_fields = ['title', 'projectName', 'category', 'ownerId', 'deadline']
+        required_fields = ['title', 'projectName', 'category', 'assignedUserId', 'deadline']
         for field in required_fields:
             if field not in body:
                 return {
@@ -27,12 +27,15 @@ def lambda_handler(event, context):
             'title': body['title'],
             'projectName': body['projectName'],
             'category': body['category'],
-            'ownerId': body['ownerId'],
-            'reviewerId': body.get('reviewerId', ''),
+            'assignedUserId': body['assignedUserId'],
+            'assignedUserEmail': body.get('assignedUserEmail', ''),
+            'reviewerUserId': body.get('reviewerUserId', ''),
+            'reviewerEmail': body.get('reviewerEmail', ''),
             'deadline': body['deadline'],
             'status': 'Not Started',
             'currentVersion': 0,
             's3Key': '',
+            'currentFileName': '',
             'lastUpdated': now,
             'comments': '',
             'createdAt': now

@@ -18,8 +18,8 @@ def lambda_handler(event, context):
             expr = Attr('projectName').eq(params['projectName'])
             filter_expr = filter_expr & expr if filter_expr else expr
         
-        if 'ownerId' in params:
-            expr = Attr('ownerId').eq(params['ownerId'])
+        if 'assignedUserId' in params:
+            expr = Attr('assignedUserId').eq(params['assignedUserId'])
             filter_expr = filter_expr & expr if filter_expr else expr
         
         if filter_expr:

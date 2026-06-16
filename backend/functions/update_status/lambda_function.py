@@ -11,7 +11,7 @@ SENDER_EMAIL = 'shirishiri931@gmail.com'
 VALID_STATUSES = [
     'Not Started', 'In Progress', 'Ready for Review',
     'Under Review', 'Revision Required', 'Approved',
-    'Completed', 'Overdue'
+    'Rejected'
 ]
 
 def send_notification(to_email, subject, message):

@@ -5,7 +5,7 @@ const API_URL = "https://bi2179b7r7.execute-api.us-east-1.amazonaws.com/prod"
 const S3_BUCKET = "https://documentflow-files-217019990923.s3.amazonaws.com"
 const poolData = { UserPoolId: "us-east-1_l9br8j9ax", ClientId: "1ok3trp2uigpjrb823lk6mpipk" }
 const userPool = new CognitoUserPool(poolData)
-const STATUS_COLORS = { "Not Started": "#95a5a6", "In Progress": "#3498db", "Ready for Review": "#f39c12", "Under Review": "#9b59b6", "Revision Required": "#e74c3c", "Approved": "#27ae60", "Completed": "#2ecc71", "Overdue": "#c0392b" }
+const STATUS_COLORS = { "Not Started": "#95a5a6", "In Progress": "#3498db", "Ready for Review": "#f39c12", "Under Review": "#9b59b6", "Revision Required": "#e74c3c", "Approved": "#27ae60", "Completed": "#2ecc71", "Rejected": "#c0392b", "Overdue": "#c0392b" }
 
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("")
@@ -76,7 +76,8 @@ function App() {
   const [filter, setFilter] = useState("All")
   const [showForm, setShowForm] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(null)
-  const [newDoc, setNewDoc] = useState({ title: "", projectName: "", category: "", ownerId: "", ownerEmail: "", reviewerId: "", reviewerEmail: "", deadline: "" })
+  const [selectedDoc, setSelectedDoc] = useState(null)
+  const [newDoc, setNewDoc] = useState({ title: "", projectName: "", category: "", assignedUserId: "", assignedUserEmail: "", reviewerUserId: "", reviewerEmail: "", deadline: "" })
 
   const handleLogin = (email, groups) => {
     setUser(email)
@@ -118,7 +119,7 @@ function App() {
     try {
       const res = await fetch(API_URL + "/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newDoc) })
       const data = await res.json()
-      if (data.documentId) { setShowForm(false); setNewDoc({ title: "", projectName: "", category: "", ownerId: "", ownerEmail: "", reviewerId: "", reviewerEmail: "", deadline: "" }); fetchDocuments() }
+      if (data.documentId) { setShowForm(false); setNewDoc({ title: "", projectName: "", category: "", assignedUserId: "", assignedUserEmail: "", reviewerUserId: "", reviewerEmail: "", deadline: "" }); fetchDocuments() }
     } catch (err) { console.error(err) }
   }
   const uploadFile = async (doc, file) => {
@@ -130,7 +131,7 @@ function App() {
   }
   const changeStatus = async (doc, newStatus, comment) => {
     try {
-      await fetch(API_URL + "/documents/" + doc.documentId + "/status", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, comment, notifyEmail: doc.ownerEmail || doc.reviewerEmail || "" }) })
+      await fetch(API_URL + "/documents/" + doc.documentId + "/status", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, comment, notifyEmail: doc.assignedUserEmail || doc.reviewerEmail || "" }) })
       setShowStatusModal(null); fetchDocuments()
     } catch (err) { console.error(err) }
   }
@@ -140,6 +141,7 @@ function App() {
   }
 
   if (!user && !loading) return <LoginPage onLogin={handleLogin} />
+  if (selectedDoc) return <DocumentDetail doc={selectedDoc} user={user} userGroup={userGroup} onBack={() => setSelectedDoc(null)} onUpdate={fetchDocuments} />
   if (loading) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontSize: "18px", color: "#1F4E79" }}>Loading...</div>
 
   const filteredDocs = filter === "All" ? documents : documents.filter(d => d.status === filter)
@@ -158,7 +160,7 @@ function App() {
       </div>
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {["All", "Overdue", "Ready for Review", "Approved"].map(s => (
+          {["All", "Ready for Review", "Approved", "Rejected"].map(s => (
             <div key={s} onClick={() => setFilter(s)} style={{ backgroundColor: filter === s ? "#1F4E79" : "white", color: filter === s ? "white" : "#333", padding: "12px 20px", borderRadius: "8px", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", fontWeight: "bold", fontSize: "14px" }}>
               {s} ({s === "All" ? documents.length : documents.filter(d => d.status === s).length})
             </div>
@@ -168,7 +170,7 @@ function App() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ backgroundColor: "#1F4E79", color: "white" }}>
-                {["Title", "Project", "Category", "Owner", "Reviewer", "Deadline", "Version", "Status", "Actions"].map(h => (
+                {["Title", "Project", "Category", "Assigned User", "Reviewer", "Deadline", "Version", "Status", "Actions"].map(h => (
                   <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px" }}>{h}</th>
                 ))}
               </tr>
@@ -179,11 +181,11 @@ function App() {
               ) : (
                 filteredDocs.map((doc, i) => (
                   <tr key={doc.documentId} style={{ backgroundColor: i % 2 === 0 ? "white" : "#f8f9fa", borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px 16px", fontWeight: "bold", fontSize: "13px" }}>{doc.title}</td>
+                    <td style={{ padding: "12px 16px", fontWeight: "bold", fontSize: "13px", cursor: "pointer", color: "#1F4E79", textDecoration: "underline" }} onClick={() => setSelectedDoc(doc)}>{doc.title}</td>
                     <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.projectName}</td>
                     <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.category}</td>
-                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.ownerId}<br/><span style={{fontSize:"11px",color:"#888"}}>{doc.ownerEmail}</span></td>
-                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.reviewerId || "-"}<br/><span style={{fontSize:"11px",color:"#888"}}>{doc.reviewerEmail}</span></td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.assignedUserId}<br/><span style={{fontSize:"11px",color:"#888"}}>{doc.assignedUserEmail}</span></td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.reviewerUserId || "-"}<br/><span style={{fontSize:"11px",color:"#888"}}>{doc.reviewerEmail}</span></td>
                     <td style={{ padding: "12px 16px", fontSize: "13px" }}>{doc.deadline}</td>
                     <td style={{ padding: "12px 16px", fontSize: "13px", textAlign: "center" }}>v{doc.currentVersion}</td>
                     <td style={{ padding: "12px 16px" }}><span style={{ backgroundColor: STATUS_COLORS[doc.status] || "#95a5a6", color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }}>{doc.status}</span></td>
@@ -210,7 +212,7 @@ function App() {
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
           <div style={{ backgroundColor: "white", padding: "32px", borderRadius: "12px", width: "500px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ margin: "0 0 24px", color: "#1F4E79" }}>New Document</h2>
-            {[["Title","title","text"],["Project Name","projectName","text"],["Category","category","text"],["Owner Name","ownerId","text"],["Owner Email","ownerEmail","email"],["Reviewer Name","reviewerId","text"],["Reviewer Email","reviewerEmail","email"],["Deadline","deadline","date"]].map(([label, key, type]) => (
+            {[["Title","title","text"],["Project Name","projectName","text"],["Category","category","text"],["Assigned User ID","assignedUserId","text"],["Assigned User Email","assignedUserEmail","email"],["Reviewer ID","reviewerUserId","text"],["Reviewer Email","reviewerEmail","email"],["Deadline","deadline","date"]].map(([label, key, type]) => (
               <div key={key} style={{ marginBottom: "14px" }}>
                 <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>{label}</label>
                 <input type={type} value={newDoc[key]} onChange={e => setNewDoc({ ...newDoc, [key]: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }} />
@@ -227,10 +229,167 @@ function App() {
   )
 }
 
+
+function DocumentDetail({ doc, user, userGroup, onBack, onUpdate }) {
+  const [history, setHistory] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
+
+  useEffect(() => { fetchHistory() }, [])
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch(API_URL + "/documents/" + doc.documentId + "/history")
+      const raw = await res.json()
+      const items = Array.isArray(raw) ? raw : (raw.body ? JSON.parse(raw.body) : [])
+      setHistory(items)
+    } catch (err) { console.error(err) }
+    finally { setLoadingHistory(false) }
+  }
+
+  const uploadFile = async (file, versionType) => {
+    setUploading(true)
+    try {
+      const res = await fetch(API_URL + "/documents/" + doc.documentId + "/versions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, uploadedBy: user, versionType: versionType, statusAtUpload: doc.status })
+      })
+      const data = await res.json()
+      if (data.uploadUrl) {
+        await fetch(data.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } })
+        alert("Uploaded! Version " + data.versionNumber)
+        onUpdate()
+        onBack()
+      }
+    } catch (err) { console.error(err) }
+    finally { setUploading(false) }
+  }
+
+  const VERSION_TYPE_COLORS = {
+    "Submitted": "#3498db", "Reviewed": "#9b59b6",
+    "Revised": "#f39c12", "Approved": "#27ae60"
+  }
+
+  const isAssigned = doc.assignedUserId === user || doc.assignedUserEmail === user
+  const isReviewer = doc.reviewerUserId === user || doc.reviewerEmail === user
+  const isPMO = userGroup === "PMO" || userGroup === "Admin"
+
+  return (
+    <div style={{ fontFamily: "Arial", minHeight: "100vh", backgroundColor: "#f5f6fa" }}>
+      <div style={{ backgroundColor: "#1F4E79", color: "white", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: "22px" }}>{doc.title}</h1>
+          <p style={{ margin: 0, fontSize: "13px", opacity: 0.8 }}>{doc.projectName} · {doc.category}</p>
+        </div>
+        <button onClick={onBack} style={{ backgroundColor: "transparent", color: "white", border: "1px solid white", padding: "10px 16px", borderRadius: "6px", cursor: "pointer" }}>← Back</button>
+      </div>
+
+      <div style={{ padding: "24px 32px", maxWidth: "900px", margin: "0 auto" }}>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+          {[
+            ["Assigned User", (doc.assignedUserId || "-") + (doc.assignedUserEmail ? " (" + doc.assignedUserEmail + ")" : "")],
+            ["Reviewer", (doc.reviewerUserId || "-") + (doc.reviewerEmail ? " (" + doc.reviewerEmail + ")" : "")],
+            ["Deadline", doc.deadline],
+            ["Current Version", "v" + doc.currentVersion],
+            ["Current File", doc.currentFileName || "-"],
+            ["Last Updated", doc.lastUpdated ? doc.lastUpdated.slice(0,10) : "-"],
+          ].map(([label, value]) => (
+            <div key={label} style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.08)" }}>
+              <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", marginBottom: "4px" }}>{label}</div>
+              <div style={{ fontSize: "14px", color: "#333" }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.08)", marginBottom: "24px" }}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", marginBottom: "8px" }}>STATUS</div>
+          <span style={{ backgroundColor: STATUS_COLORS[doc.status] || "#95a5a6", color: "white", padding: "6px 16px", borderRadius: "16px", fontSize: "14px", fontWeight: "bold" }}>
+            {doc.status}
+          </span>
+          {doc.comments && <p style={{ marginTop: "12px", fontSize: "13px", color: "#555", borderTop: "1px solid #eee", paddingTop: "12px" }}>Comment: {doc.comments}</p>}
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+          {(isAssigned || isPMO) && (
+            <label style={{ backgroundColor: "#2E75B6", color: "white", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>
+              {uploading ? "Uploading..." : "Upload Submitted"}
+              <input type="file" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) uploadFile(f, "Submitted") }} />
+            </label>
+          )}
+          {(isAssigned || isPMO) && (
+            <label style={{ backgroundColor: "#f39c12", color: "white", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>
+              {uploading ? "Uploading..." : "Upload Revised"}
+              <input type="file" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) uploadFile(f, "Revised") }} />
+            </label>
+          )}
+          {(isReviewer || isPMO) && (
+            <label style={{ backgroundColor: "#9b59b6", color: "white", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>
+              {uploading ? "Uploading..." : "Upload Reviewed"}
+              <input type="file" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) uploadFile(f, "Reviewed") }} />
+            </label>
+          )}
+          <button onClick={() => setShowStatusModal(true)} style={{ backgroundColor: "#1F4E79", color: "white", border: "none", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>
+            Change Status
+          </button>
+        </div>
+
+        <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize: "13px", fontWeight: "bold", color: "#1F4E79", marginBottom: "12px" }}>VERSION HISTORY</div>
+          {loadingHistory ? <p style={{ color: "#888" }}>Loading...</p> : history.length === 0 ? <p style={{ color: "#888" }}>No versions uploaded yet</p> : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f8f9fa" }}>
+                  {["Version", "Type", "File Name", "Uploaded By", "Date", "Status"].map(h => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "12px", color: "#555" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((v, i) => (
+                  <tr key={i} style={{ borderTop: "1px solid #eee" }}>
+                    <td style={{ padding: "8px 12px", fontSize: "13px", fontWeight: "bold" }}>v{v.versionNumber}</td>
+                    <td style={{ padding: "8px 12px" }}>
+                      <span style={{ backgroundColor: VERSION_TYPE_COLORS[v.versionType] || "#95a5a6", color: "white", padding: "2px 8px", borderRadius: "10px", fontSize: "11px" }}>
+                        {v.versionType || "Submitted"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "8px 12px", fontSize: "13px" }}>{v.fileName}</td>
+                    <td style={{ padding: "8px 12px", fontSize: "13px" }}>{v.uploadedBy}</td>
+                    <td style={{ padding: "8px 12px", fontSize: "13px" }}>{v.uploadedAt ? v.uploadedAt.slice(0,10) : "-"}</td>
+                    <td style={{ padding: "8px 12px", fontSize: "12px", color: "#888" }}>{v.statusAtUpload || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {showStatusModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <StatusModal doc={doc} onClose={() => setShowStatusModal(false)} onSave={async (d, status, comment) => {
+            await fetch(API_URL + "/documents/" + doc.documentId + "/status", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status, comment, notifyEmail: doc.assignedUserEmail || doc.reviewerEmail || "" })
+            })
+            setShowStatusModal(false)
+            onUpdate()
+            onBack()
+          }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StatusModal({ doc, onClose, onSave }) {
   const [selectedStatus, setSelectedStatus] = useState(doc.status)
   const [comment, setComment] = useState("")
-  const statuses = ["Not Started", "In Progress", "Ready for Review", "Under Review", "Revision Required", "Approved", "Completed"]
+  const statuses = ["Not Started", "In Progress", "Ready for Review", "Under Review", "Revision Required", "Approved", "Rejected"]
   return (
     <div style={{ backgroundColor: "white", padding: "32px", borderRadius: "12px", width: "460px" }}>
       <h2 style={{ margin: "0 0 8px", color: "#1F4E79" }}>Change Status</h2>
