@@ -35,14 +35,13 @@ def lambda_handler(event, context):
         
         new_version = int(document.get('currentVersion', 0)) + 1
         file_name = body.get('fileName', 'document')
-        project_name = document.get('projectName', 'unknown').replace(' ', '_')
         version_type = body.get('versionType', 'Submitted')
         status_at_upload = body.get('statusAtUpload', 'In Progress')
-        s3_key = f"projects/{project_name}/documents/{document_id}/versions/v{new_version}/{file_name}"
+        s3_key = f"documents/{document_id}/versions/v{new_version}/{file_name}"
         
         presigned_url = s3.generate_presigned_url(
             'put_object',
-            Params={'Bucket': BUCKET_NAME, 'Key': s3_key},
+            Params={'Bucket': BUCKET_NAME, 'Key': s3_key, 'ContentType': 'application/octet-stream'},
             ExpiresIn=3600
         )
         

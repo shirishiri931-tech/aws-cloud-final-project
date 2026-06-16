@@ -126,7 +126,7 @@ function App() {
     try {
       const res = await fetch(API_URL + "/documents/" + doc.documentId + "/versions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, uploadedBy: user }) })
       const data = await res.json()
-      if (data.uploadUrl) { await fetch(data.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } }); alert("Uploaded! Version " + data.versionNumber); fetchDocuments() }
+      if (data.uploadUrl) { await fetch(data.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": "application/octet-stream" } }); alert("Uploaded! Version " + data.versionNumber); fetchDocuments() }
     } catch (err) { console.error(err) }
   }
   const changeStatus = async (doc, newStatus, comment) => {
@@ -135,9 +135,17 @@ function App() {
       setShowStatusModal(null); fetchDocuments()
     } catch (err) { console.error(err) }
   }
-  const downloadFile = (doc) => {
-    if (!doc.s3Key) { alert("No file uploaded yet"); return }
-    window.open(S3_BUCKET + "/" + doc.s3Key, "_blank")
+  const downloadFile = async (doc, versionNumber) => {
+    try {
+      const url = versionNumber
+        ? API_URL + "/documents/" + doc.documentId + "/download?version=" + versionNumber
+        : API_URL + "/documents/" + doc.documentId + "/download"
+      const res = await fetch(url)
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || "Download failed"); return }
+      if (data.downloadUrl) { window.open(data.downloadUrl, "_blank") }
+      else { alert("Download failed") }
+    } catch (err) { alert("Download failed") }
   }
 
   if (!user && !loading) return <LoginPage onLogin={handleLogin} />
@@ -193,7 +201,7 @@ function App() {
                       <div style={{ display: "flex", gap: "6px" }}>
 {(userGroup !== "Reviewer") && <label style={{ backgroundColor: "#2E75B6", color: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Upload<input type="file" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) uploadFile(doc, f) }} /></label>}
                         <button onClick={() => setShowStatusModal(doc)} style={{ backgroundColor: "#f39c12", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Status</button>
-                        <button onClick={() => downloadFile(doc)} style={{ backgroundColor: "#27ae60", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Download</button>
+                        {(doc.currentVersion > 0 && doc.s3Key) && <button onClick={() => downloadFile(doc)} style={{ backgroundColor: "#27ae60", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Download</button>}
                       </div>
                     </td>
                   </tr>
@@ -258,7 +266,7 @@ function DocumentDetail({ doc, user, userGroup, onBack, onUpdate }) {
       })
       const data = await res.json()
       if (data.uploadUrl) {
-        await fetch(data.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } })
+        await fetch(data.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": "application/octet-stream" } })
         alert("Uploaded! Version " + data.versionNumber)
         onUpdate()
         onBack()
@@ -342,7 +350,7 @@ function DocumentDetail({ doc, user, userGroup, onBack, onUpdate }) {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "#f8f9fa" }}>
-                  {["Version", "Type", "File Name", "Uploaded By", "Date", "Status"].map(h => (
+                  {["Version", "Type", "File Name", "Uploaded By", "Date", "Status", ""].map(h => (
                     <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "12px", color: "#555" }}>{h}</th>
                   ))}
                 </tr>
