@@ -5,11 +5,29 @@ from datetime import datetime
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('DocumentFlow-Documents')
+ses = boto3.client('ses', region_name='us-east-1')
+
+SENDER_EMAIL = 'shirishiri931@gmail.com'
+
+def send_notification(to_email, subject, message):
+    if not to_email:
+        return
+    try:
+        ses.send_email(
+            Source=SENDER_EMAIL,
+            Destination={'ToAddresses': [to_email]},
+            Message={
+                'Subject': {'Data': subject},
+                'Body': {'Text': {'Data': message}}
+            }
+        )
+    except Exception as e:
+        print(f"Email error: {str(e)}")
 
 def lambda_handler(event, context):
     try:
         body = json.loads(event.get('body', '{}'))
-        
+
         required_fields = ['title', 'projectName', 'category', 'assignedUserId', 'deadline']
         for field in required_fields:
             if field not in body:
@@ -18,10 +36,10 @@ def lambda_handler(event, context):
                     'headers': {'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': f'Missing required field: {field}'})
                 }
-        
+
         document_id = str(uuid.uuid4())
         now = datetime.utcnow().isoformat()
-        
+
         item = {
             'documentId': document_id,
             'title': body['title'],
@@ -38,11 +56,25 @@ def lambda_handler(event, context):
             'currentFileName': '',
             'lastUpdated': now,
             'comments': '',
-            'createdAt': now
+            'createdAt': now,
+            'createdByEmail': body.get('createdByEmail', '')
         }
-        
+
         table.put_item(Item=item)
-        
+
+        assigned_email = body.get('assignedUserEmail', '')
+        if assigned_email:
+            subject = f"DocumentFlow - New Task Assigned: {body['title']}"
+            message = f"""You have been assigned a new document task.
+
+Document: {body['title']}
+Project: {body['projectName']}
+Category: {body['category']}
+Deadline: {body['deadline']}
+
+Please log in to DocumentFlow Cloud to upload the document."""
+            send_notification(assigned_email, subject, message)
+
         return {
             'statusCode': 201,
             'headers': {'Access-Control-Allow-Origin': '*'},
@@ -51,7 +83,7 @@ def lambda_handler(event, context):
                 'documentId': document_id
             })
         }
-    
+
     except Exception as e:
         return {
             'statusCode': 500,

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react"
 import { CognitoUserPool, CognitoUser, AuthenticationDetails } from "amazon-cognito-identity-js"
 
+const FONT = "Inter, Segoe UI, system-ui, sans-serif"
+
 const API_URL = "https://bi2179b7r7.execute-api.us-east-1.amazonaws.com/prod"
 const S3_BUCKET = "https://documentflow-files-217019990923.s3.amazonaws.com"
 const poolData = { UserPoolId: "us-east-1_l9br8j9ax", ClientId: "1ok3trp2uigpjrb823lk6mpipk" }
@@ -33,34 +35,34 @@ function LoginPage({ onLogin }) {
     })
   }
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f5f6fa", display: "flex", justifyContent: "center", alignItems: "center" }}>
-      <div style={{ backgroundColor: "white", padding: "48px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 24px rgba(0,0,0,0.1)" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0F2E4C 0%, #1F4E79 50%, #2E75B6 100%)", display: "flex", justifyContent: "center", alignItems: "center", fontFamily: FONT }}>
+      <div style={{ backgroundColor: "white", padding: "48px", borderRadius: "16px", width: "400px", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <h1 style={{ color: "#1F4E79", fontSize: "28px", margin: "0 0 8px" }}>DocumentFlow Cloud</h1>
+          <h1 style={{ color: "#1F4E79", fontSize: "26px", margin: "0 0 8px", fontWeight: "800", letterSpacing: "-0.5px" }}>☁ DocumentFlow Cloud</h1>
           <p style={{ color: "#888", fontSize: "14px" }}>Sign in to your account</p>
         </div>
         {!needsNewPassword ? (
           <div>
             <div style={{ marginBottom: "16px" }}>
               <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
             </div>
             <div style={{ marginBottom: "24px" }}>
               <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }} />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
             </div>
             {error && <p style={{ color: "#e74c3c", fontSize: "13px", marginBottom: "16px" }}>{error}</p>}
-            <button onClick={handleLogin} disabled={loading} style={{ width: "100%", backgroundColor: "#1F4E79", color: "white", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "15px" }}>{loading ? "Signing in..." : "Sign In"}</button>
+            <button onClick={handleLogin} disabled={loading} style={{ width: "100%", background: "linear-gradient(135deg, #1F4E79, #2E75B6)", color: "white", border: "none", padding: "13px", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "15px", boxShadow: "0 4px 12px rgba(31,78,121,0.3)", transition: "transform 0.1s" }}>{loading ? "Signing in..." : "Sign In"}</button>
           </div>
         ) : (
           <div>
             <p style={{ color: "#f39c12", fontSize: "13px", marginBottom: "16px" }}>Please set a new password.</p>
             <div style={{ marginBottom: "24px" }}>
               <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>New Password</label>
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }} />
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
             </div>
             {error && <p style={{ color: "#e74c3c", fontSize: "13px", marginBottom: "16px" }}>{error}</p>}
-            <button onClick={handleNewPassword} disabled={loading} style={{ width: "100%", backgroundColor: "#1F4E79", color: "white", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "15px" }}>{loading ? "Setting..." : "Set New Password"}</button>
+            <button onClick={handleNewPassword} disabled={loading} style={{ width: "100%", background: "linear-gradient(135deg, #1F4E79, #2E75B6)", color: "white", border: "none", padding: "13px", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "15px", boxShadow: "0 4px 12px rgba(31,78,121,0.3)" }}>{loading ? "Setting..." : "Set New Password"}</button>
           </div>
         )}
       </div>
@@ -76,14 +78,29 @@ function App() {
   const [filter, setFilter] = useState("All")
   const [showForm, setShowForm] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(null)
+  const [showAdmin, setShowAdmin] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [newDoc, setNewDoc] = useState({ title: "", projectName: "", category: "", assignedUserId: "", assignedUserEmail: "", reviewerUserId: "", reviewerEmail: "", deadline: "" })
+  const [allUsers, setAllUsers] = useState([])
+
+  const fetchAllUsers = async () => {
+    try {
+      const res = await fetch(API_URL + "/users")
+      const data = await res.json()
+      setAllUsers(Array.isArray(data) ? data : JSON.parse(data.body || "[]"))
+    } catch (err) { console.error(err) }
+  }
 
   const handleLogin = (email, groups) => {
     setUser(email)
-    setUserGroup(groups && groups.length > 0 ? groups[0] : "Member")
-    fetchDocuments()
+    const g = groups || []
+    const primaryGroup = g.includes("Admin") ? "Admin" : (g.includes("PMO") ? "PMO" : (g.includes("Reviewer") ? "Reviewer" : (g[0] || "Member")))
+    setUserGroup(primaryGroup)
+    if (primaryGroup === "Admin") { setShowAdmin(true); setLoading(false) }
+    else { fetchDocuments() }
   }
+
+  const handleShowAdminFromHeader = () => setShowAdmin(true)
   const handleLogout = () => {
     const currentUser = userPool.getCurrentUser()
     if (currentUser) currentUser.signOut()
@@ -99,8 +116,10 @@ function App() {
           if (!err2) {
             const emailAttr = attrs.find(a => a.Name === "email")
             setUser(emailAttr ? emailAttr.Value : currentUser.getUsername())
-            setUserGroup(groups[0] || "Member")
-            fetchDocuments()
+            const primaryGroup = groups.includes("Admin") ? "Admin" : (groups.includes("PMO") ? "PMO" : (groups.includes("Reviewer") ? "Reviewer" : (groups[0] || "Member")))
+            setUserGroup(primaryGroup)
+            if (primaryGroup === "Admin") { setShowAdmin(true); setLoading(false) }
+            else { fetchDocuments() }
           } else { setLoading(false) }
         })
       })
@@ -117,7 +136,7 @@ function App() {
   }
   const createDocument = async () => {
     try {
-      const res = await fetch(API_URL + "/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newDoc) })
+      const res = await fetch(API_URL + "/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newDoc, createdByEmail: user }) })
       const data = await res.json()
       if (data.documentId) { setShowForm(false); setNewDoc({ title: "", projectName: "", category: "", assignedUserId: "", assignedUserEmail: "", reviewerUserId: "", reviewerEmail: "", deadline: "" }); fetchDocuments() }
     } catch (err) { console.error(err) }
@@ -149,10 +168,15 @@ function App() {
   }
 
   if (!user && !loading) return <LoginPage onLogin={handleLogin} />
+  if (showAdmin) return <AdminScreen onBack={() => { setShowAdmin(false); fetchDocuments() }} />
   if (selectedDoc) return <DocumentDetail doc={selectedDoc} user={user} userGroup={userGroup} onBack={() => setSelectedDoc(null)} onUpdate={fetchDocuments} />
   if (loading) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontSize: "18px", color: "#1F4E79" }}>Loading...</div>
 
-  const filteredDocs = filter === "All" ? documents : documents.filter(d => d.status === filter)
+  const visibleDocs = (userGroup === "Admin" || userGroup === "PMO")
+    ? documents
+    : documents.filter(d => d.assignedUserEmail === user || d.reviewerEmail === user)
+
+  const filteredDocs = filter === "All" ? visibleDocs : visibleDocs.filter(d => d.status === filter)
   return (
     <div style={{ fontFamily: "Arial", minHeight: "100vh", backgroundColor: "#f5f6fa" }}>
       <div style={{ backgroundColor: "#1F4E79", color: "white", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -162,7 +186,8 @@ function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <span style={{ fontSize: "13px", opacity: 0.8 }}>logged in as: {user} | {userGroup}</span>
-          {(userGroup === "Admin" || userGroup === "PMO") && <button onClick={() => setShowForm(true)} style={{ backgroundColor: "#f39c12", color: "white", border: "none", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>+ New Document</button>}
+          {userGroup === "Admin" && <button onClick={() => setShowAdmin(true)} style={{ backgroundColor: "#c0392b", color: "white", border: "none", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>Admin Panel</button>}
+          {(userGroup === "Admin" || userGroup === "PMO") && <button onClick={() => { setShowForm(true); fetchAllUsers() }} style={{ backgroundColor: "#f39c12", color: "white", border: "none", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>+ New Document</button>}
           <button onClick={handleLogout} style={{ backgroundColor: "transparent", color: "white", border: "1px solid white", padding: "10px 16px", borderRadius: "6px", cursor: "pointer", fontSize: "13px" }}>Logout</button>
         </div>
       </div>
@@ -199,7 +224,7 @@ function App() {
                     <td style={{ padding: "12px 16px" }}><span style={{ backgroundColor: STATUS_COLORS[doc.status] || "#95a5a6", color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }}>{doc.status}</span></td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "flex", gap: "6px" }}>
-{(userGroup !== "Reviewer") && <label style={{ backgroundColor: "#2E75B6", color: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Upload<input type="file" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) uploadFile(doc, f) }} /></label>}
+{(doc.assignedUserEmail === user || doc.reviewerEmail === user || userGroup === "Admin" || userGroup === "PMO") && <label style={{ backgroundColor: "#2E75B6", color: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Upload<input type="file" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) uploadFile(doc, f) }} /></label>}
                         <button onClick={() => setShowStatusModal(doc)} style={{ backgroundColor: "#f39c12", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Status</button>
                         {(doc.currentVersion > 0 && doc.s3Key) && <button onClick={() => downloadFile(doc)} style={{ backgroundColor: "#27ae60", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}>Download</button>}
                       </div>
@@ -220,12 +245,40 @@ function App() {
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
           <div style={{ backgroundColor: "white", padding: "32px", borderRadius: "12px", width: "500px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ margin: "0 0 24px", color: "#1F4E79" }}>New Document</h2>
-            {[["Title","title","text"],["Project Name","projectName","text"],["Category","category","text"],["Assigned User ID","assignedUserId","text"],["Assigned User Email","assignedUserEmail","email"],["Reviewer ID","reviewerUserId","text"],["Reviewer Email","reviewerEmail","email"],["Deadline","deadline","date"]].map(([label, key, type]) => (
+            {[["Document Title","title","text"],["Project Name","projectName","text"],["Document Category","category","text"]].map(([label, key, type]) => (
               <div key={key} style={{ marginBottom: "14px" }}>
                 <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>{label}</label>
-                <input type={type} value={newDoc[key]} onChange={e => setNewDoc({ ...newDoc, [key]: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }} />
+                <input type={type} value={newDoc[key]} onChange={e => setNewDoc({ ...newDoc, [key]: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
               </div>
             ))}
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Responsible User</label>
+              <select value={newDoc.assignedUserEmail} onChange={e => {
+                const selected = allUsers.find(u => u.email === e.target.value)
+                setNewDoc({ ...newDoc, assignedUserId: selected ? ((selected.firstName || "") + " " + (selected.lastName || "")).trim() : "", assignedUserEmail: e.target.value })
+              }} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none" }}>
+                <option value="">Select a user</option>
+                {allUsers.map(u => (
+                  <option key={u.email} value={u.email}>{((u.firstName || "") + " " + (u.lastName || "")).trim() || u.email} - {u.email}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Reviewer / Approver</label>
+              <select value={newDoc.reviewerEmail} onChange={e => {
+                const selected = allUsers.find(u => u.email === e.target.value)
+                setNewDoc({ ...newDoc, reviewerUserId: selected ? ((selected.firstName || "") + " " + (selected.lastName || "")).trim() : "", reviewerEmail: e.target.value })
+              }} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none" }}>
+                <option value="">Select a reviewer</option>
+                {allUsers.map(u => (
+                  <option key={u.email} value={u.email}>{((u.firstName || "") + " " + (u.lastName || "")).trim() || u.email} - {u.email}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Review Deadline</label>
+              <input type="date" value={newDoc.deadline} onChange={e => setNewDoc({ ...newDoc, deadline: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
+            </div>
             <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
               <button onClick={createDocument} style={{ flex: 1, backgroundColor: "#1F4E79", color: "white", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>Create Document</button>
               <button onClick={() => setShowForm(false)} style={{ flex: 1, backgroundColor: "#eee", color: "#333", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer" }}>Cancel</button>
@@ -394,6 +447,137 @@ function DocumentDetail({ doc, user, userGroup, onBack, onUpdate }) {
   )
 }
 
+
+function AdminScreen({ onBack }) {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showAddUser, setShowAddUser] = useState(false)
+  const [newUser, setNewUser] = useState({ firstName: "", lastName: "", email: "", group: "PMO" })
+  const [creating, setCreating] = useState(false)
+
+  useEffect(() => { fetchUsers() }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(API_URL + "/users")
+      const data = await res.json()
+      setUsers(Array.isArray(data) ? data : JSON.parse(data.body || "[]"))
+    } catch (err) { console.error(err) }
+    finally { setLoading(false) }
+  }
+
+  const createUser = async () => {
+    if (!newUser.email || !newUser.firstName || !newUser.lastName) {
+      alert("Please fill in all fields")
+      return
+    }
+    setCreating(true)
+    try {
+      const res = await fetch(API_URL + "/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser)
+      })
+      const data = await res.json()
+      if (res.ok) {
+        alert("User created successfully. An invitation email was sent to " + newUser.email)
+        setShowAddUser(false)
+        setNewUser({ firstName: "", lastName: "", email: "", group: "PMO" })
+        fetchUsers()
+      } else {
+        alert(data.error || "Failed to create user")
+      }
+    } catch (err) { alert("Failed to create user") }
+    finally { setCreating(false) }
+  }
+
+  const GROUP_COLORS = { Admin: "#c0392b", PMO: "#1F4E79", Reviewer: "#9b59b6" }
+
+  return (
+    <div style={{ fontFamily: "Arial", minHeight: "100vh", backgroundColor: "#f5f6fa" }}>
+      <div style={{ backgroundColor: "#1F4E79", color: "white", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: "24px" }}>DocumentFlow Cloud - Admin Panel</h1>
+          <p style={{ margin: 0, fontSize: "13px", opacity: 0.8 }}>User Management</p>
+        </div>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button onClick={() => setShowAddUser(true)} style={{ backgroundColor: "#f39c12", color: "white", border: "none", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>+ New User</button>
+          <button onClick={onBack} style={{ backgroundColor: "transparent", color: "white", border: "1px solid white", padding: "10px 16px", borderRadius: "6px", cursor: "pointer" }}>View Documents</button>
+        </div>
+      </div>
+      <div style={{ padding: "24px 32px" }}>
+        <h2 style={{ color: "#1F4E79", marginBottom: "16px" }}>All Users ({users.length})</h2>
+        {loading ? <p>Loading...</p> : (
+          <div style={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#1F4E79", color: "white" }}>
+                  {["Name", "Email", "Status", "Role", "Created"].map(h => (
+                    <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u, i) => (
+                  <tr key={u.username} style={{ backgroundColor: i % 2 === 0 ? "white" : "#f8f9fa", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>{(u.firstName || "") + " " + (u.lastName || "")}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: "bold" }}>{u.email}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>
+                      <span style={{ backgroundColor: u.status === "CONFIRMED" ? "#27ae60" : "#f39c12", color: "white", padding: "3px 8px", borderRadius: "10px", fontSize: "11px" }}>
+                        {u.status === "CONFIRMED" ? "Active" : "Pending First Login"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px" }}>
+                      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                        {(u.groups || []).map(g => (
+                          <span key={g} style={{ backgroundColor: GROUP_COLORS[g] || "#95a5a6", color: "white", padding: "3px 8px", borderRadius: "10px", fontSize: "11px" }}>{g}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: "12px", color: "#888" }}>{u.createdAt ? u.createdAt.slice(0,10) : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      {showAddUser && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div style={{ backgroundColor: "white", padding: "32px", borderRadius: "12px", width: "420px" }}>
+            <h2 style={{ margin: "0 0 24px", color: "#1F4E79" }}>New User</h2>
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>First Name</label>
+              <input type="text" value={newUser.firstName} onChange={e => setNewUser({ ...newUser, firstName: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
+            </div>
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Last Name</label>
+              <input type="text" value={newUser.lastName} onChange={e => setNewUser({ ...newUser, lastName: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
+            </div>
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Email</label>
+              <input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none", transition: "border-color 0.15s" }} />
+            </div>
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Role</label>
+              <select value={newUser.group} onChange={e => setNewUser({ ...newUser, group: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px" }}>
+                <option value="Admin">Admin</option>
+                <option value="PMO">PMO</option>
+                <option value="Reviewer">Reviewer</option>
+              </select>
+            </div>
+            <p style={{ fontSize: "12px", color: "#888", marginBottom: "16px" }}>An invitation email with a temporary password will be sent automatically to this address.</p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button onClick={createUser} disabled={creating} style={{ flex: 1, backgroundColor: "#1F4E79", color: "white", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>{creating ? "Creating..." : "Create User"}</button>
+              <button onClick={() => setShowAddUser(false)} style={{ flex: 1, backgroundColor: "#eee", color: "#333", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StatusModal({ doc, onClose, onSave }) {
   const [selectedStatus, setSelectedStatus] = useState(doc.status)
   const [comment, setComment] = useState("")
@@ -411,7 +595,7 @@ function StatusModal({ doc, onClose, onSave }) {
       </div>
       <div style={{ marginBottom: "24px" }}>
         <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold", color: "#555" }}>Comment</label>
-        <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box", resize: "none" }} />
+        <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e1e5ea", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", resize: "none", outline: "none" }} />
       </div>
       <div style={{ display: "flex", gap: "12px" }}>
         <button onClick={() => onSave(doc, selectedStatus, comment)} style={{ flex: 1, backgroundColor: "#1F4E79", color: "white", border: "none", padding: "12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>Save</button>

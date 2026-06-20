@@ -1,8 +1,19 @@
 import json
 import boto3
+import secrets
+import string
 
 cognito = boto3.client('cognito-idp', region_name='us-east-1')
 USER_POOL_ID = 'us-east-1_l9br8j9ax'
+
+VALID_ROLES = ['Admin', 'PMO', 'Reviewer']
+
+def generate_temp_password():
+    chars = string.ascii_letters + string.digits
+    while True:
+        pwd = ''.join(secrets.choice(chars) for _ in range(10)) + secrets.choice("!@#$%")
+        if any(c.isupper() for c in pwd) and any(c.islower() for c in pwd) and any(c.isdigit() for c in pwd):
+            return pwd
 
 def lambda_handler(event, context):
     try:
@@ -36,6 +47,8 @@ def list_users():
         users.append({
             'username': u['Username'],
             'email': attrs.get('email', ''),
+            'firstName': attrs.get('given_name', ''),
+            'lastName': attrs.get('family_name', ''),
             'status': u['UserStatus'],
             'groups': group_names,
             'createdAt': str(u['UserCreateDate'])
@@ -44,19 +57,27 @@ def list_users():
 
 def create_user(body):
     email = body.get('email')
-    group = body.get('group', 'Member')
+    group = body.get('group')
+    first_name = body.get('firstName', '')
+    last_name = body.get('lastName', '')
+
     if not email:
         return response(400, {'error': 'Email is required'})
+    if group not in VALID_ROLES:
+        return response(400, {'error': 'Invalid role. Must be Admin, PMO, or Reviewer'})
+
+    temp_password = generate_temp_password()
 
     cognito.admin_create_user(
         UserPoolId=USER_POOL_ID,
         Username=email,
         UserAttributes=[
             {'Name': 'email', 'Value': email},
-            {'Name': 'email_verified', 'Value': 'true'}
+            {'Name': 'email_verified', 'Value': 'true'},
+            {'Name': 'given_name', 'Value': first_name},
+            {'Name': 'family_name', 'Value': last_name}
         ],
-        TemporaryPassword='TempPass1!',  # TODO: generate random password
-        MessageAction='SUPPRESS'
+        TemporaryPassword=temp_password
     )
 
     cognito.admin_add_user_to_group(
@@ -65,7 +86,7 @@ def create_user(body):
         GroupName=group
     )
 
-    return response(201, {'message': 'User created successfully', 'email': email, 'group': group})
+    return response(201, {'message': 'User created. Invitation email sent.', 'email': email, 'group': group})
 
 def delete_user(username):
     if not username:

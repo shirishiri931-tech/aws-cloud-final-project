@@ -10,6 +10,20 @@ documents_table = dynamodb.Table('DocumentFlow-Documents')
 history_table = dynamodb.Table('DocumentFlow-VersionHistory')
 
 BUCKET_NAME = 'documentflow-files-217019990923'
+ses = boto3.client('ses', region_name='us-east-1')
+SENDER_EMAIL = 'shirishiri931@gmail.com'
+
+def send_notification(to_email, subject, message):
+    if not to_email:
+        return
+    try:
+        ses.send_email(
+            Source=SENDER_EMAIL,
+            Destination={'ToAddresses': [to_email]},
+            Message={'Subject': {'Data': subject}, 'Body': {'Text': {'Data': message}}}
+        )
+    except Exception as e:
+        print(f"Email error: {str(e)}")
 
 def lambda_handler(event, context):
     try:
@@ -70,7 +84,19 @@ def lambda_handler(event, context):
             'versionType': version_type,
             'statusAtUpload': status_at_upload
         })
-        
+
+        reviewer_email = document.get('reviewerEmail', '')
+        if version_type == 'Submitted' and reviewer_email:
+            subject = f"DocumentFlow - Document Ready for Review: {document.get('title', '')}"
+            message = f"""A document has been submitted and is ready for your review.
+
+Document: {document.get('title', '')}
+Project: {document.get('projectName', '')}
+Version: {new_version}
+
+Please log in to DocumentFlow Cloud to review the document."""
+            send_notification(reviewer_email, subject, message)
+
         return {
             'statusCode': 200,
             'headers': {'Access-Control-Allow-Origin': '*'},

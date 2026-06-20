@@ -15,6 +15,8 @@ VALID_STATUSES = [
 ]
 
 def send_notification(to_email, subject, message):
+    if not to_email:
+        return
     try:
         ses.send_email(
             Source=SENDER_EMAIL,
@@ -33,7 +35,6 @@ def lambda_handler(event, context):
         document_id = event.get('pathParameters', {}).get('id')
         new_status = body.get('status')
         comment = body.get('comment', '')
-        notify_email = body.get('notifyEmail', '')
 
         if not document_id or not new_status:
             return {
@@ -49,6 +50,9 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': f'Invalid status: {new_status}'})
             }
 
+        doc_response = table.get_item(Key={'documentId': document_id})
+        document = doc_response.get('Item', {})
+
         now = datetime.utcnow().isoformat()
 
         table.update_item(
@@ -62,17 +66,35 @@ def lambda_handler(event, context):
             ExpressionAttributeNames={'#st': 'status'}
         )
 
-        if notify_email:
-            subject = f'DocumentFlow – Status Updated: {new_status}'
-            message = f'''Document status has been updated.
+        title = document.get('title', '')
+        project_name = document.get('projectName', '')
+        assigned_email = document.get('assignedUserEmail', '')
+        created_by_email = document.get('createdByEmail', '')
 
-Document ID: {document_id}
+        if new_status == 'Approved' and created_by_email:
+            subject = f'DocumentFlow - Document Approved: {title}'
+            message = f"""The document has been approved by the reviewer.
+
+Document: {title}
+Project: {project_name}
+Comment: {comment}
+Updated At: {now}
+
+Please log in to DocumentFlow Cloud to view the document."""
+            send_notification(created_by_email, subject, message)
+
+        elif new_status in ('Revision Required', 'Rejected') and assigned_email:
+            subject = f'DocumentFlow - Action Required: {title}'
+            message = f"""The document requires your attention.
+
+Document: {title}
+Project: {project_name}
 New Status: {new_status}
 Comment: {comment}
 Updated At: {now}
 
-Please log in to DocumentFlow Cloud to view the document.'''
-            send_notification(notify_email, subject, message)
+Please log in to DocumentFlow Cloud to view the document."""
+            send_notification(assigned_email, subject, message)
 
         return {
             'statusCode': 200,
