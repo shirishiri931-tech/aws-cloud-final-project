@@ -1,6 +1,6 @@
 import json
 import boto3
-from datetime import datetime
+from datetime import datetime, timezone
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('DocumentFlow-Documents')
@@ -53,7 +53,7 @@ def lambda_handler(event, context):
         doc_response = table.get_item(Key={'documentId': document_id})
         document = doc_response.get('Item', {})
 
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
 
         table.update_item(
             Key={'documentId': document_id},
@@ -107,8 +107,9 @@ Please log in to DocumentFlow Cloud to view the document."""
         }
 
     except Exception as e:
+        print(f"Error: {str(e)}")
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': str(e)})
+            'body': json.dumps({'error': 'Internal server error'})
         }

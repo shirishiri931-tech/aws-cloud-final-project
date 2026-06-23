@@ -16,6 +16,10 @@ eggs/
 .eggs/
 lib/
 lib64/
+# The broad Python `lib/` rule above also matches the frontend source lib —
+# re-include it (it holds the app's API/auth/config modules, not build output).
+!frontend/src/lib/
+!frontend/src/lib/**
 parts/
 sdist/
 var/

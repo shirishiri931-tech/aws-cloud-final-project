@@ -1,6 +1,6 @@
 import json
 import boto3
-from datetime import datetime
+from datetime import datetime, timezone
 from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
@@ -10,8 +10,8 @@ FINAL_STATUSES = ['Approved', 'Completed', 'Overdue']
 
 def lambda_handler(event, context):
     try:
-        today = datetime.utcnow().strftime('%Y-%m-%d')
-        now = datetime.utcnow().isoformat()
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        now = datetime.now(timezone.utc).isoformat()
 
         response = table.scan(
             FilterExpression=

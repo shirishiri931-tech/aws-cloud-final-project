@@ -1,0 +1,58 @@
+# .docsync/manifest.yml — page -> source anchors (seeded by `docsync bootstrap`)
+# Validate with: docsync doctor --docs-repo .
+# reference pages use precise anchors (autopass); concept/guide pages use broad
+# anchors with judge_required: true.
+
+pages:
+  - path: docs/specification/overview.mdx
+    kind: concept
+    judge_required: true
+    sources:
+      - repo: ""               # single-repo: empty repo == wildcard
+        globs: ["README.md", "backend/functions/**", "frontend/src/**"]
+
+  - path: docs/specification/business-idea.mdx
+    kind: concept
+    judge_required: true
+    sources:
+      - repo: ""
+        globs: ["README.md"]
+
+  - path: docs/specification/use-cases.mdx
+    kind: guide
+    judge_required: true
+    sources:
+      - repo: ""
+        globs:
+          - "frontend/src/App.jsx"
+          - "backend/functions/**/lambda_function.py"
+        symbols:
+          - "lambda_handler"
+          - "createDocument"
+          - "uploadFile"
+          - "changeStatus"
+          - "downloadFile"
+          - "createUser"
+
+  - path: docs/specification/prompts.mdx
+    kind: concept
+    judge_required: true
+    sources:
+      - repo: ""
+        globs: ["README.md", "backend/functions/**", "frontend/src/**"]
+
+  - path: docs/specification/architecture.mdx
+    kind: reference
+    judge_required: false
+    sources:
+      - repo: ""
+        globs: ["backend/functions/**/lambda_function.py"]
+        symbols: ["lambda_handler"]
+
+  - path: docs/specification/api-reference.mdx
+    kind: reference
+    judge_required: false
+    sources:
+      - repo: ""
+        globs: ["backend/functions/**/lambda_function.py"]
+        symbols: ["lambda_handler"]

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "DocumentFlow Cloud",
+  "theme": "mint",
+  "colors": {
+    "primary": "#1F4E79",
+    "light": "#2E75B6",
+    "dark": "#0F2E4C"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "חלק א' – מסמך אפיון",
+        "pages": [
+          "specification/overview",
+          "specification/business-idea",
+          "specification/use-cases",
+          "specification/architecture",
+          "specification/api-reference",
+          "specification/prompts"
+        ]
+      }
+    ]
+  }
+}

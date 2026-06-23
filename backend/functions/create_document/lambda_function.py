@@ -1,7 +1,11 @@
 import json
+import re
 import boto3
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+
+DEADLINE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('DocumentFlow-Documents')
@@ -37,8 +41,24 @@ def lambda_handler(event, context):
                     'body': json.dumps({'error': f'Missing required field: {field}'})
                 }
 
+        if not DEADLINE_RE.match(str(body['deadline'])):
+            return {
+                'statusCode': 400,
+                'headers': {'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Invalid deadline format, expected YYYY-MM-DD'})
+            }
+
+        for email_field in ('assignedUserEmail', 'reviewerEmail'):
+            email_value = body.get(email_field, '')
+            if email_value and not EMAIL_RE.match(str(email_value)):
+                return {
+                    'statusCode': 400,
+                    'headers': {'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': f'Invalid email format for {email_field}'})
+                }
+
         document_id = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
 
         item = {
             'documentId': document_id,
@@ -85,8 +105,9 @@ Please log in to DocumentFlow Cloud to upload the document."""
         }
 
     except Exception as e:
+        print(f"Error: {str(e)}")
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': str(e)})
+            'body': json.dumps({'error': 'Internal server error'})
         }

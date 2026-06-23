@@ -1,0 +1,44 @@
+/* RTL is driven by dir="rtl" on <html> (see rtl.js). This file handles the
+   two things the dir attribute alone can't fix in Mintlify's Tailwind layout:
+   (1) code must stay left-to-right, (2) the main content column reserves the
+   sidebar gap with a PHYSICAL left padding that doesn't mirror under RTL. */
+
+/* --- 1. Code stays LTR even inside RTL content --- */
+code,
+pre,
+kbd,
+samp,
+.font-mono,
+[class*="language-"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+:not(pre) > code {
+  unicode-bidi: isolate;
+}
+
+/* Mermaid diagrams are LTR graphics — don't let the RTL page mirror them. */
+.mermaid,
+[class*="mermaid"],
+pre:has(> code.language-mermaid),
+svg[id^="mermaid"],
+[data-mermaid] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: center;
+}
+
+/* --- 2. Mirror the content column's sidebar gap for RTL --- */
+/* #content-area uses `lg:pl-[23.7rem] lg:-ml-12` to clear the LEFT sidebar.
+   Under RTL the sidebar is on the RIGHT, so move the gap to the right side.
+   Scoped to lg+ where the fixed sidebar exists (matches Mintlify's breakpoint). */
+@media (min-width: 1024px) {
+  [dir="rtl"] #content-area {
+    padding-left: 0.25rem;   /* reset to the px-1 base */
+    padding-right: 23.7rem;  /* mirror of lg:pl-[23.7rem] */
+    margin-left: 0;          /* cancel lg:-ml-12 */
+    margin-right: -3rem;     /* mirror of lg:-ml-12 */
+  }
+}

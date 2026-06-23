@@ -1,0 +1,195 @@
+---
+title: "4. מסמך פרומפטים"
+description: "הפרומפטים ששימשו לפיתוח DocumentFlow Cloud בכלי GenAI (ChatGPT, Claude, Gemini, Amazon Q)."
+---
+
+# 4. מסמך פרומפטים (GenAI Prompts)
+
+מסמך זה מרכז את הפרומפטים ששימשו לפיתוח המערכת בעזרת כלי בינה מלאכותית
+יוצרת. עיקר הפיתוח בוצע עם **Claude (Anthropic)**, לצד שימוש משלים ב‑ChatGPT,
+Gemini ו‑Amazon Q.
+
+<Note>
+הפרומפטים שלהלן הם **דוגמאות מייצגות (representative samples)** שמשחזרות את
+תהליך הפיתוח בפועל — המקור המדויק של כל פרומפט לא נשמר. הם מסודרים לפי הכלי
+ולפי שלב הפיתוח, ומשקפים את הקוד שאכן נכתב (8 פונקציות Lambda, אפליקציית React,
+ותשתית AWS).
+</Note>
+
+---
+
+## 4.1 Claude (Anthropic) — ארכיטקטורה, Lambda, ו‑Frontend
+
+הכלי המרכזי לפיתוח. שימש לתכנון הארכיטקטורה, כתיבת פונקציות ה‑Lambda ב‑Python,
+ובניית אפליקציית ה‑React.
+
+**P‑C1 — תכנון ארכיטקטורה (Specification phase)**
+```text
+I'm building a serverless document management system on AWS for a cloud
+course final project. Requirements: documents have an owner, a reviewer, a
+deadline, a status, and full version history. Users authenticate via Cognito
+with three roles: Admin, PMO, Reviewer. Propose a serverless architecture
+using Lambda, API Gateway, DynamoDB, S3, SES and EventBridge. List the
+DynamoDB tables and key schema, and the set of Lambda functions with their
+HTTP routes.
+```
+
+**P‑C2 — פונקציית `create_document`**
+```text
+Write a Python 3.11 AWS Lambda handler for POST /documents. It receives JSON
+with title, projectName, category, assignedUserId, assignedUserEmail,
+reviewerEmail, deadline. Validate required fields and return 400 on missing
+ones. Generate a UUID documentId, set status "Not Started" and currentVersion
+0, write the item to the DynamoDB table 'DocumentFlow-Documents', and send an
+SES email to the assigned user titled "New Task Assigned". Always return CORS
+header Access-Control-Allow-Origin: *.
+```
+
+**P‑C3 — העלאת גרסה עם Presigned URL**
+```text
+Write a Lambda for POST /documents/{id}/versions that does NOT receive the
+file itself. Instead it should: look up the document, compute the next version
+number, generate an S3 presigned PUT URL (1 hour expiry) for the key
+documents/{id}/versions/v{n}/{fileName}, update the document row, append a row
+to 'DocumentFlow-VersionHistory', and if versionType == "Submitted" email the
+reviewer "Document Ready for Review". Return the presigned uploadUrl to the
+browser.
+```
+
+**P‑C4 — מכונת מצבים של סטטוס + התראות**
+```text
+Write update_status for PUT /documents/{id}/status. Validate the new status
+against a whitelist. On "Approved" email the PMO who created the document; on
+"Revision Required" or "Rejected" email the assigned user. Keep the comment
+field. Return 400 for an invalid status.
+```
+
+**P‑C5 — Frontend ב‑React + Cognito**
+```text
+Build a single-file React app (App.jsx) using amazon-cognito-identity-js for
+login, including the newPasswordRequired challenge on first login. After login
+decode cognito:groups to determine the role. Show a documents table; PMO/Admin
+see all documents, a regular user sees only documents where they are the
+assigned user or reviewer. Add a "New Document" modal, an Upload button that
+uses the presigned URL flow, a status-change modal, and a document detail
+screen with version history.
+```
+
+**P‑C6 — סינון לפי תפקיד**
+```text
+In the React app, filter the visible documents so Admin and PMO see everything
+but other roles only see rows where assignedUserEmail or reviewerEmail equals
+the logged-in user's email. Show the filter tabs All / Ready for Review /
+Approved / Rejected with live counts.
+```
+
+---
+
+## 4.2 ChatGPT (OpenAI) — דיבוג, רפקטור ו‑Edge Cases
+
+שימש לבדיקות קצה, שיפור קוד, וטיפול בשגיאות.
+
+**P‑G1 — הורדה מאובטחת של גרסה מסוימת**
+```text
+Improve this get_download_url Lambda: it should support an optional ?version=N
+query param to download a specific historical version from the VersionHistory
+table, validate that N is a positive integer, fall back to the current version
+otherwise, set Content-Disposition to force a download with the original
+filename, and use a 300-second presigned GET URL. Add proper logging and
+return 404 when the version or file is missing.
+```
+
+**P‑G2 — חישוב Overdue ב‑EventBridge**
+```text
+Write a scheduled Lambda triggered daily by EventBridge that scans
+DocumentFlow-Documents and sets status to "Overdue" for any document whose
+deadline is before today AND whose status is not Approved/Completed/Overdue.
+Return how many documents were updated. Explain the DynamoDB FilterExpression.
+```
+
+**P‑G3 — דיבוג CORS**
+```text
+My React app calls API Gateway but the browser blocks the response with a CORS
+error on the preflight. The Lambda already returns Access-Control-Allow-Origin.
+What else do I need to configure on API Gateway (OPTIONS method / CORS) and in
+the S3 bucket CORS policy to allow presigned PUT uploads from the browser?
+```
+
+---
+
+## 4.3 Gemini (Google) — UI/UX וניסוח תוכן
+
+שימש לעיצוב חוויית המשתמש, ניסוח טקסטים והתראות.
+
+**P‑M1 — עיצוב מסך התחברות**
+```text
+Suggest a clean, professional login screen design for a corporate cloud
+document system called "DocumentFlow Cloud". Use a blue gradient brand palette
+(#1F4E79 / #2E75B6), a centered card, and a "new password required" state for
+first-time users. Provide the color values and layout structure.
+```
+
+**P‑M2 — נוסח התראות דוא"ל**
+```text
+Write short, professional email notification texts for a document workflow:
+(1) a new task assigned to a responsible user, (2) a document ready for review
+sent to a reviewer, (3) a document approved sent to the PMO, (4) a revision
+required sent back to the responsible user. Keep each under 5 lines and include
+document title, project and deadline where relevant.
+```
+
+**P‑M3 — צבעי סטטוס**
+```text
+Propose an accessible color mapping for these document statuses so each is
+visually distinct on white badges: Not Started, In Progress, Ready for Review,
+Under Review, Revision Required, Approved, Rejected, Overdue.
+```
+
+---
+
+## 4.4 Amazon Q — תשתית AWS, IAM ואבטחה
+
+שימש לשאלות הקשורות ל‑AWS עצמה: הרשאות, פריסה ושירותים מנוהלים.
+
+**P‑Q1 — מדיניות IAM ל‑least‑privilege**
+```text
+My Lambda execution role currently has AmazonSESFullAccess. Replace it with a
+minimal inline IAM policy that only allows ses:SendEmail and ses:SendRawEmail.
+Show the JSON policy and explain why least privilege matters here.
+```
+
+**P‑Q2 — Cognito עם סיסמאות זמניות**
+```text
+How do I use admin_create_user with the Cognito Identity Provider boto3 client
+to create a user with a random temporary password, mark the email as verified,
+and add the user to a group (Admin/PMO/Reviewer)? The user should be forced to
+set a new password on first login.
+```
+
+**P‑Q3 — מדיניות CORS לדלי S3**
+```text
+Give me the S3 bucket CORS configuration that allows a browser to PUT a file
+to a presigned URL and later GET it, from any origin, for a private bucket
+used only via presigned URLs.
+```
+
+**P‑Q4 — פריסת קוד Lambda מה‑CLI**
+```text
+What's the AWS CLI command to update an existing Lambda function's code from a
+local zip of lambda_function.py in us-east-1? Show the zip + update-function-code
+commands.
+```
+
+---
+
+## 4.5 סיכום השימוש בכלי GenAI
+
+| כלי | תרומה עיקרית |
+|------|---------------|
+| **Claude** | ארכיטקטורה, כתיבת 8 פונקציות Lambda, אפליקציית React מלאה, לוגיקת ההרשאות וההתראות. |
+| **ChatGPT** | דיבוג, edge cases, הורדת גרסאות, לוגיקת Overdue, פתרון CORS. |
+| **Gemini** | עיצוב UI, פלטת צבעים, ניסוח טקסטים והתראות דוא"ל. |
+| **Amazon Q** | IAM/least‑privilege, Cognito, מדיניות CORS ל‑S3, פקודות פריסה. |
+
+> כלל הקוד שנוצר נבדק, הותאם ושולב ידנית; כלי ה‑GenAI שימשו כמאיצי פיתוח ולא
+> כתחליף להבנת המערכת.

@@ -1,8 +1,14 @@
 import json
 import boto3
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
+
+VERSION_TYPE_TO_STATUS = {
+    'Submitted': 'Ready for Review',
+    'Reviewed': 'Under Review',
+    'Revised': 'Ready for Review'
+}
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 s3 = boto3.client('s3', region_name='us-east-1')
@@ -51,6 +57,15 @@ def lambda_handler(event, context):
         file_name = body.get('fileName', 'document')
         version_type = body.get('versionType', 'Submitted')
         status_at_upload = body.get('statusAtUpload', 'In Progress')
+
+        if not file_name or not str(file_name).strip():
+            return {
+                'statusCode': 400,
+                'headers': {'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'fileName must be a non-empty string'})
+            }
+
+        new_status = VERSION_TYPE_TO_STATUS.get(version_type, 'In Progress')
         s3_key = f"documents/{document_id}/versions/v{new_version}/{file_name}"
         
         presigned_url = s3.generate_presigned_url(
@@ -59,8 +74,8 @@ def lambda_handler(event, context):
             ExpiresIn=3600
         )
         
-        now = datetime.utcnow().isoformat()
-        
+        now = datetime.now(timezone.utc).isoformat()
+
         documents_table.update_item(
             Key={'documentId': document_id},
             UpdateExpression='SET currentVersion = :v, s3Key = :s, lastUpdated = :t, #st = :status, currentFileName = :fn',
@@ -68,7 +83,7 @@ def lambda_handler(event, context):
                 ':v': Decimal(new_version),
                 ':s': s3_key,
                 ':t': now,
-                ':status': 'In Progress',
+                ':status': new_status,
                 ':fn': file_name
             },
             ExpressionAttributeNames={'#st': 'status'}
@@ -109,8 +124,9 @@ Please log in to DocumentFlow Cloud to review the document."""
         }
     
     except Exception as e:
+        print(f"Error: {str(e)}")
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': str(e)})
+            'body': json.dumps({'error': 'Internal server error'})
         }

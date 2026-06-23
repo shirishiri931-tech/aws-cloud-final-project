@@ -1,0 +1,60 @@
+---
+title: "3. ארכיטקטורה"
+description: "שירותי AWS, זרימת הנתונים ומודל ההרשאות של DocumentFlow Cloud."
+---
+
+# 3. ארכיטקטורה
+
+## 3.1 שירותי AWS
+
+המערכת בנויה כ‑**Serverless** מלא באזור `us-east-1`.
+
+| שירות | תפקיד |
+|--------|--------|
+| **Amazon S3** | אחסון פרטי לגרסאות הקבצים. כל גישה דרך Presigned URLs בלבד. |
+| **Amazon DynamoDB** | `DocumentFlow-Documents` (מטא‑דאטה) + `DocumentFlow-VersionHistory` (היסטוריית גרסאות). |
+| **AWS Lambda** | 8 פונקציות לוגיקה עסקית (Python 3.11). |
+| **Amazon API Gateway** | REST API עם נתיבים תומכי CORS. |
+| **Amazon Cognito** | אימות משתמשים ותפקידים מבוססי קבוצות (Admin/PMO/Reviewer). |
+| **Amazon SES** | התראות דוא"ל לאורך מחזור החיים של המסמך. |
+| **Amazon EventBridge** | משימה יומית מתוזמנת לסימון מסמכים באיחור. |
+| **Amazon CloudWatch** | לוגים וניטור לכל הפונקציות. |
+| **AWS IAM** | תפקיד הרצה עם הרשאות מינימום (least‑privilege). |
+
+## 3.2 זרימת נתונים (Data Flow)
+
+הדיאגרמה מציגה את זרימת הנתונים בין רכיבי המערכת: המשתמשים (PMO, אחראים,
+מבקרים) ניגשים ל‑Frontend, האימות מתבצע מול Cognito, הבקשות עוברות דרך
+API Gateway אל פונקציות ה‑Lambda הניגשות ל‑DynamoDB ו‑S3, ומשם נשלחות התראות
+דוא"ל (SES) ונרשמים לוגים (CloudWatch). EventBridge מפעיל את `overdue_check`
+מדי יום.
+
+<Frame caption="DocumentFlow Cloud – ארכיטקטורת AWS">
+  <img src="/architecture/documentflow_cloud_aws_architecture.png" alt="DocumentFlow Cloud AWS architecture diagram" />
+</Frame>
+
+**העלאת קובץ** אינה עוברת דרך Lambda: ה‑Lambda מנפיק Presigned URL והדפדפן
+מעלה/מוריד **ישירות מ‑S3** — חוסך תעבורה ועומס מהפונקציות.
+
+## 3.3 מודל סטטוסים (Status Workflow)
+
+```
+Not Started → In Progress → Ready for Review → Under Review
+   → Approved | Revision Required | Rejected
+```
+
+`Overdue` מחושב אוטומטית (`overdue_check`) ואינו סטטוס שנבחר ידנית.
+
+## 3.4 מודל הרשאות
+
+- **סינון מסמכים בצד הלקוח:** Admin/PMO רואים את כל המסמכים; משתמש רגיל רואה רק
+  מסמכים שבהם הוא `assignedUserEmail` או `reviewerEmail`.
+- **תפקידים מ‑Cognito Groups:** התפקיד הראשי נגזר מ‑`cognito:groups` שב‑ID Token.
+- **least‑privilege:** תפקיד ה‑Lambda משתמש ב‑policy ייעודי ל‑SES
+  (`ses:SendEmail`, `ses:SendRawEmail`) ולא ב‑`AmazonSESFullAccess`.
+
+## 3.5 הערות אבטחה
+
+- דלי ה‑S3 פרטי לחלוטין; כל גישה דרך Presigned URLs בעלי תוקף מוגבל (העלאה: שעה, הורדה: 300 שניות).
+- אין סיסמאות קשיחות בקוד; Cognito מייצר סיסמה זמנית אקראית בעת יצירת משתמש.
+- SES נמצא כעת במצב Sandbox — התראות נשלחות רק לכתובות מאומתות.

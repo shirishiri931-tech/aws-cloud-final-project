@@ -1,0 +1,48 @@
+---
+title: "REST API Reference"
+description: "שמונה נקודות קצה (Lambda) של DocumentFlow Cloud מאחורי API Gateway."
+---
+
+# REST API Reference
+
+כל הנתיבים חשופים דרך API Gateway (`/prod`) ומחזירים כותרת `Access-Control-Allow-Origin: *`.
+
+| פונקציה | Method · Route | תיאור |
+|----------|----------------|--------|
+| `create_document` | `POST /documents` | יוצר מסמך; שולח דוא"ל לאחראי. |
+| `get_documents` | `GET /documents` | מחזיר את כל המסמכים (תומך סינון לפי `status`/`projectName`/`assignedUserId`). |
+| `upload_version` | `POST /documents/{id}/versions` | מנפיק Presigned PUT, שומר היסטוריה, מודיע למבקר על Submitted. |
+| `update_status` | `PUT /documents/{id}/status` | מעדכן סטטוס; מודיע ל‑PMO על Approved או לאחראי על Revision/Rejected. |
+| `get_download_url` | `GET /documents/{id}/download` | מנפיק Presigned GET (300 שניות) לגרסה נוכחית או מסוימת. |
+| `get_history` | `GET /documents/{id}/history` | מחזיר היסטוריית גרסאות מלאה (ממוין יורד). |
+| `manage_users` | `GET/POST/DELETE /users` | רשימת/יצירת/מחיקת משתמשי Cognito. |
+| `overdue_check` | EventBridge (יומי) | מסמן מסמכים שחלף מועדם כ‑Overdue. |
+
+## דוגמאות
+
+### POST /documents
+```json
+{
+  "title": "System Design Spec",
+  "projectName": "Apollo",
+  "category": "Design",
+  "assignedUserId": "Dana Levi",
+  "assignedUserEmail": "dana@example.com",
+  "reviewerEmail": "uri@example.com",
+  "deadline": "2026-07-15"
+}
+```
+תגובה: `201` עם `documentId` (UUID).
+
+### POST /documents/{id}/versions
+```json
+{ "fileName": "spec_v2.pdf", "uploadedBy": "dana@example.com", "versionType": "Submitted" }
+```
+תגובה: `200` עם `uploadUrl` (Presigned PUT), `versionNumber`, `s3Key`.
+
+### PUT /documents/{id}/status
+```json
+{ "status": "Approved", "comment": "Looks good." }
+```
+סטטוסים חוקיים: `Not Started`, `In Progress`, `Ready for Review`, `Under Review`,
+`Revision Required`, `Approved`, `Rejected`.
