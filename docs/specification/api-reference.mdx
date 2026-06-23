@@ -33,12 +33,16 @@ description: "שמונה נקודות קצה (Lambda) של DocumentFlow Cloud מ
 }
 ```
 תגובה: `201` עם `documentId` (UUID).
+ולידציה: `deadline` חייב להיות בפורמט `YYYY-MM-DD`, ו‑`assignedUserEmail`/`reviewerEmail`
+חייבים להיות כתובות תקינות — אחרת `400` עם הודעת השגיאה המתאימה.
 
 ### POST /documents/{id}/versions
 ```json
 { "fileName": "spec_v2.pdf", "uploadedBy": "dana@example.com", "versionType": "Submitted" }
 ```
 תגובה: `200` עם `uploadUrl` (Presigned PUT), `versionNumber`, `s3Key`.
+הסטטוס מתעדכן אוטומטית לפי `versionType`: `Submitted`/`Revised` → `Ready for Review`,
+`Reviewed` → `Under Review`, אחרת `In Progress`. `fileName` ריק → `400`.
 
 ### PUT /documents/{id}/status
 ```json
@@ -46,3 +50,9 @@ description: "שמונה נקודות קצה (Lambda) של DocumentFlow Cloud מ
 ```
 סטטוסים חוקיים: `Not Started`, `In Progress`, `Ready for Review`, `Under Review`,
 `Revision Required`, `Approved`, `Rejected`.
+
+## טיפול בשגיאות
+
+שגיאות צד‑שרת (`500`) מחזירות הודעה גנרית `Internal server error` ואינן חושפות
+פרטי חריגה ללקוח; הפירוט נרשם ל‑CloudWatch בלבד. כל חותמות הזמן נכתבות כ‑UTC
+מודע‑אזור (timezone‑aware).

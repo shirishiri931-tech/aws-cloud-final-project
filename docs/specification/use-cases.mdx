@@ -73,7 +73,9 @@ description: "שבעה תרחישי שימוש מקצה‑לקצה של Document
 5. נשלח דוא"ל לאחראי: **"New Task Assigned"** (Amazon SES).
 
 - **תוצאה:** מסמך חדש מופיע בטבלה; האחראי קיבל התראה.
-- **חריגים:** שדה חובה חסר (`title`, `projectName`, `category`, `assignedUserId`, `deadline`) → `400 Missing required field`.
+- **חריגים:** שדה חובה חסר (`title`, `projectName`, `category`, `assignedUserId`, `deadline`) → `400 Missing required field`;
+  פורמט מועד לא תקין (שאינו `YYYY-MM-DD`) → `400 Invalid deadline format`;
+  כתובת דוא"ל לא תקינה (`assignedUserEmail`/`reviewerEmail`) → `400 Invalid email format`.
 
 ---
 
@@ -88,12 +90,14 @@ description: "שבעה תרחישי שימוש מקצה‑לקצה של Document
 2. הפונקציה מחשבת `new_version = currentVersion + 1` ומייצרת **Presigned PUT URL**
    ל‑S3 (תוקף שעה), עם מפתח `documents/{id}/versions/v{n}/{fileName}`.
 3. הדפדפן מעלה את הקובץ **ישירות ל‑S3** באמצעות ה‑URL החתום (`PUT`).
-4. רשומת המסמך מתעדכנת (`currentVersion`, `s3Key`, `currentFileName`, `status=In Progress`),
-   ונוספת רשומה ל‑`DocumentFlow-VersionHistory`.
+4. רשומת המסמך מתעדכנת (`currentVersion`, `s3Key`, `currentFileName`), והסטטוס
+   נגזר מ‑`versionType`: `Submitted` → **Ready for Review**, `Reviewed` →
+   **Under Review**, `Revised` → **Ready for Review**, אחרת **In Progress**.
+   במקביל נוספת רשומה ל‑`DocumentFlow-VersionHistory`.
 5. אם `versionType = "Submitted"` ויש מבקר — נשלח דוא"ל למבקר: **"Document Ready for Review"**.
 
-- **תוצאה:** גרסה חדשה נשמרת ב‑S3 ובהיסטוריה; המבקר קיבל התראה.
-- **חריגים:** `id` חסר → `400`; מסמך לא קיים → `404 Document not found`.
+- **תוצאה:** גרסה חדשה נשמרת ב‑S3 ובהיסטוריה; הסטטוס מתקדם אוטומטית והמבקר קיבל התראה.
+- **חריגים:** `id` חסר או `fileName` ריק → `400`; מסמך לא קיים → `404 Document not found`.
 
 ---
 
