@@ -43,6 +43,9 @@ Not Started → In Progress → Ready for Review → Under Review
    → Approved | Revision Required | Rejected
 ```
 
+המעברים מונעים בחלקם על‑ידי העלאות: `upload_version` מקדם את הסטטוס לפי
+`versionType` (`Submitted`/`Revised` → **Ready for Review**, `Reviewed` →
+**Under Review**), כך שהתקדמות מחזור החיים אינה תלויה רק בעדכון ידני.
 `Overdue` מחושב אוטומטית (`overdue_check`) ואינו סטטוס שנבחר ידנית.
 
 ## 3.4 מודל הרשאות
@@ -58,3 +61,20 @@ Not Started → In Progress → Ready for Review → Under Review
 - דלי ה‑S3 פרטי לחלוטין; כל גישה דרך Presigned URLs בעלי תוקף מוגבל (העלאה: שעה, הורדה: 300 שניות).
 - אין סיסמאות קשיחות בקוד; Cognito מייצר סיסמה זמנית אקראית בעת יצירת משתמש.
 - SES נמצא כעת במצב Sandbox — התראות נשלחות רק לכתובות מאומתות.
+- שגיאות `500` מחזירות הודעה גנרית (`Internal server error`) ואינן מדליפות פרטי
+  חריגה ללקוח; הקלט מאומת בצד השרת (פורמט מועד, כתובות דוא"ל, שם קובץ).
+
+## 3.6 מבנה ה‑Frontend
+
+לאחר השדרוג, אפליקציית ה‑React מאורגנת לפי אחריות (במקום קובץ `App.jsx` יחיד):
+
+| תיקייה | תפקיד |
+|--------|--------|
+| `components/ui` | רכיבי בסיס לשימוש חוזר (Button, Modal, Table, Toast, Pagination, FilterTabs…). |
+| `components/auth` · `admin` · `documents` | מסכים לפי תחום (התחברות, ניהול משתמשים, מסמכים). |
+| `context` | `AuthContext` ו‑`ToastContext` לניהול מצב גלובלי. |
+| `hooks` | `useDocuments`, `useUsers`, `useHistory`, `useAuth`, `useToast` — לוגיקת נתונים. |
+| `lib` | `api.js` (לקוח REST), `cognito.js`, `roles.js`, `statusConfig.js`, `versionConfig.js`. |
+
+הפרדה זו ממקמת את קריאות ה‑API ב‑`lib/api.js` ואת לוגיקת המצב ב‑hooks, כך
+שהמסכים נשארים דקים — ללא שינוי בחוזה ה‑REST מול ה‑Backend.

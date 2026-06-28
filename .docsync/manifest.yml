@@ -25,14 +25,18 @@ pages:
       - repo: ""
         globs:
           - "frontend/src/App.jsx"
+          - "frontend/src/lib/**"
+          - "frontend/src/hooks/**"
+          - "frontend/src/components/**"
           - "backend/functions/**/lambda_function.py"
         symbols:
+          # frontend symbols relocated in the production-grade rebuild
           - "lambda_handler"
-          - "createDocument"
-          - "uploadFile"
-          - "changeStatus"
-          - "downloadFile"
-          - "createUser"
+          - "createDocument"   # lib/api.js + useDocuments.js (createDoc)
+          - "uploadVersion"    # was uploadFile -> useDocuments.js / api.js
+          - "updateStatus"     # was changeStatus -> useDocuments.js / api.js
+          - "getDownloadUrl"   # was downloadFile -> lib/api.js
+          - "createUser"       # lib/api.js + components/admin/AddUserModal.jsx
 
   - path: docs/specification/prompts.mdx
     kind: concept

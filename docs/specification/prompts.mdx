@@ -83,6 +83,26 @@ the logged-in user's email. Show the filter tabs All / Ready for Review /
 Approved / Rejected with live counts.
 ```
 
+**P‑C7 — שדרוג ארכיטקטורת ה‑Frontend (Refactor)**
+```text
+Refactor the single-file App.jsx into a production-grade structure without
+changing the REST contract: extract a components/ui kit (Button, Modal, Table,
+Toast, Pagination, FilterTabs), split screens into components/auth, admin and
+documents, move all fetch calls into lib/api.js with a typed ApiError, add
+React Context for auth and toasts, and put data logic in hooks
+(useDocuments, useUsers, useHistory). Keep screens thin.
+```
+
+**P‑C8 — תיקון נכונות זרימה ב‑Backend (Flow-correctness)**
+```text
+In upload_version, set the document status from the versionType instead of a
+hardcoded "In Progress": Submitted and Revised -> "Ready for Review",
+Reviewed -> "Under Review". Also validate inputs server-side: deadline must
+match YYYY-MM-DD, emails must be well-formed, fileName must be non-empty, and
+500 responses must return a generic "Internal server error" (log details to
+CloudWatch only). Use timezone-aware UTC timestamps.
+```
+
 ---
 
 ## 4.2 ChatGPT (OpenAI) — דיבוג, רפקטור ו‑Edge Cases
